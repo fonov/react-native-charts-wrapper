@@ -1,6 +1,8 @@
 package com.github.wuxudong.rncharts.charts;
 
 import android.graphics.RectF;
+import android.view.MotionEvent;
+import android.view.View;
 
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
@@ -11,6 +13,7 @@ import com.github.mikephil.charting.charts.BarLineChartBase;
 import com.github.mikephil.charting.charts.Chart;
 import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.highlight.Highlight;
 import com.github.mikephil.charting.jobs.ZoomJob;
 import com.github.mikephil.charting.listener.BarLineChartTouchListener;
 import com.github.mikephil.charting.listener.OnChartGestureListener;
@@ -410,6 +413,27 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
             }
 
             ChartGroupHolder.addChart(extraProperties.group, extraProperties.identifier, chart, extraProperties.syncX, extraProperties.syncY);
+        }
+    }
+
+    @ReactProp(name = "highlightOnTouchesBegan")
+    public void setHighlightOnTouchesBegan(final Chart chart, boolean highlightOnTouchesBegan) {
+        if (highlightOnTouchesBegan) {
+            chart.setOnTouchListener(new View.OnTouchListener() {
+                public boolean onTouch(View v, MotionEvent event) {
+                    int eventAction = event.getAction();
+
+                    if (eventAction == MotionEvent.ACTION_DOWN) {
+                        int x = (int)event.getX();
+                        int y = (int)event.getY();
+
+                        Highlight highlight = chart.getHighlightByTouchPoint(x, y);
+                        chart.highlightValue(highlight, true);
+                    }
+
+                    return false;
+                }
+            });
         }
     }
 }

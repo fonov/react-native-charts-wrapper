@@ -8,6 +8,13 @@ import SwiftyJSON
 import Charts
 
 class BridgeUtils {
+    public enum MarkerType: Int
+    {
+        case balloon
+        case point
+    }
+  
+  
     static func toIOSAlpha(_ alpha: NSNumber) -> CGFloat {
         return CGFloat(Double(truncating: alpha) / 255.0);
     }
@@ -22,6 +29,17 @@ class BridgeUtils {
         let json = try! JSONSerialization.data(withJSONObject: dict);
         
         return JSON.init(parseJSON: NSString(data: json, encoding: String.Encoding.utf8.rawValue)! as String);
+    }
+  
+    static func parceMarkerType(_ type: String) -> MarkerType {
+        switch type {
+        case "BALLOON":
+          return .balloon
+        case "POINT":
+          return .point
+        default:
+          return .balloon
+        }
     }
     
     static func parseLineChartMode(_ mode: String) -> LineChartDataSet.Mode {

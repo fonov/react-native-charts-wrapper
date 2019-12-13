@@ -2,6 +2,7 @@ package com.github.wuxudong.rncharts.charts;
 
 import android.content.res.ColorStateList;
 import android.os.Build;
+import android.view.View;
 
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
@@ -25,6 +26,7 @@ import com.github.mikephil.charting.formatter.PercentFormatter;
 import com.github.mikephil.charting.highlight.Highlight;
 import com.github.wuxudong.rncharts.data.DataExtract;
 import com.github.wuxudong.rncharts.markers.RNRectangleMarkerView;
+import com.github.wuxudong.rncharts.markers.RNPointMarkerView;
 import com.github.wuxudong.rncharts.utils.BridgeUtils;
 import com.github.wuxudong.rncharts.utils.EasingFunctionHelper;
 import com.github.wuxudong.rncharts.utils.TypefaceUtils;
@@ -267,29 +269,47 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
             return;
         }
 
-        RNRectangleMarkerView marker = new RNRectangleMarkerView(chart.getContext());
-        marker.setChartView(chart);
+        String type = propMap.getString("type");
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP &&
+        if (type.isEmpty() || type.equals("BALLOON")) {
+            RNRectangleMarkerView marker = new RNRectangleMarkerView(chart.getContext());
+            marker.setChartView(chart);
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP &&
                 BridgeUtils.validate(propMap, ReadableType.Number, "markerColor")) {
-            marker.getTvContent()
+                marker.getTvContent()
                     .setBackgroundTintList(
                             ColorStateList.valueOf(propMap.getInt("markerColor"))
                     );
-        }
+            }
 
-        if (BridgeUtils.validate(propMap, ReadableType.Number, "digits")) {
-            marker.setDigits(propMap.getInt("digits"));
-        }
+            if (BridgeUtils.validate(propMap, ReadableType.Number, "digits")) {
+                marker.setDigits(propMap.getInt("digits"));
+            }
 
-        if (BridgeUtils.validate(propMap, ReadableType.Number, "textColor")) {
-            marker.getTvContent().setTextColor(propMap.getInt("textColor"));
-        }
-        if (BridgeUtils.validate(propMap, ReadableType.Number, "textSize")) {
-            marker.getTvContent().setTextSize(propMap.getInt("textSize"));
-        }
+            if (BridgeUtils.validate(propMap, ReadableType.Number, "textColor")) {
+                marker.getTvContent().setTextColor(propMap.getInt("textColor"));
+            }
+            if (BridgeUtils.validate(propMap, ReadableType.Number, "textSize")) {
+                marker.getTvContent().setTextSize(propMap.getInt("textSize"));
+            }
 
-        chart.setMarker(marker);
+            chart.setMarker(marker);
+        } else if (type.equals("POINT")) {
+
+            float radius = (float) propMap.getInt("radius");
+            float borderWidth = (float) propMap.getInt("borderWidth");
+            float shadowBlur = (float) propMap.getInt("shadowBlur");
+            int shadowColor = propMap.getInt("shadowColor");
+            int backgroundColor = propMap.getInt("backgroundColor");
+            int borderColor = propMap.getInt("borderColor");
+
+            chart.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+
+            RNPointMarkerView marker = new RNPointMarkerView(chart.getContext(), radius, shadowBlur, borderWidth, shadowColor, backgroundColor, borderColor);
+
+            chart.setMarker(marker);
+        }
     }
 
     /**
@@ -444,13 +464,7 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
                 if (BridgeUtils.validate(propMap, ReadableType.String, "timeUnit")) {
                     timeUnit = TimeUnit.valueOf(propMap.getString("timeUnit").toUpperCase());
                 }
-                Locale locale = Locale.getDefault();
-                
-                if (BridgeUtils.validate(propMap, ReadableType.String, "locale")) {
-                    locale = Locale.forLanguageTag(propMap.getString("locale"));
-                }
-
-                axis.setValueFormatter(new DateFormatter(valueFormatterPattern, since, timeUnit, locale));
+                axis.setValueFormatter(new DateFormatter(valueFormatterPattern, since, timeUnit));
             } else {
                 axis.setValueFormatter(new CustomFormatter(valueFormatter));
             }
@@ -517,7 +531,6 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
         super.onAfterUpdateTransaction(chart);
         chart.notifyDataSetChanged();
         onAfterDataSetChanged(chart);
-        chart.postInvalidate();;
+        chart.postInvalidate();
     }
-
 }

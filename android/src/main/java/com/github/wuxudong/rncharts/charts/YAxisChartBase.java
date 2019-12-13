@@ -47,5 +47,4 @@ public abstract class YAxisChartBase<T extends Chart, U extends Entry> extends C
             }
         }
     }
-
 }

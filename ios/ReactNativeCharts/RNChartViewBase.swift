@@ -20,12 +20,24 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     
     private var group: String?
     
-    private  var identifier: String?
+    private var identifier: String?
     
-    private  var syncX = true
+    private var syncX = true
     
-    private  var syncY = false
+    private var syncY = false
     
+    private var highlightOnTouchesBegan = false
+    
+    override open func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        if highlightOnTouchesBegan {
+            let touch : UITouch! = touches.first! as UITouch
+            let location = touch.location(in: chart)
+            
+            let highlight = chart.getHighlightByTouchPoint(location)
+            chart.highlightValue(highlight, callDelegate: true)
+        }
+    }
+
     override open func reactSetFrame(_ frame: CGRect)
     {
         super.reactSetFrame(frame);
@@ -177,6 +189,10 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         }
         
         chart.chartDescription = chartDescription
+    }
+    
+    func setHighlightOnTouchesBegan(_ highlightOnTouchesBegan: Bool) {
+        self.highlightOnTouchesBegan = highlightOnTouchesBegan
     }
     
     func setNoDataText(_ noDataText: String) {
@@ -412,8 +428,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
               let valueFormatterPattern = config["valueFormatterPattern"].stringValue;
               let since = config["since"].double != nil ? config["since"].doubleValue : 0
               let timeUnit = config["timeUnit"].string != nil ? config["timeUnit"].stringValue : "MILLISECONDS"
-              let locale = config["locale"].string;
-              axis.valueFormatter = CustomChartDateFormatter(pattern: valueFormatterPattern, since: since, timeUnit: timeUnit, locale: locale);
+              axis.valueFormatter = CustomChartDateFormatter(pattern: valueFormatterPattern, since: since, timeUnit: timeUnit);
             } else {
               let customFormatter = NumberFormatter()
               customFormatter.positiveFormat = valueFormatter.stringValue
@@ -429,19 +444,27 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     }
     
     func setMarker(_ config: NSDictionary) {
-        let json = BridgeUtils.toJson(config)
-        
-        if json["enabled"].exists() && !json["enabled"].boolValue {
-            chart.marker = nil
-            return
-        }
-        
+      let json = BridgeUtils.toJson(config)
+      
+      if json["enabled"].exists() && !json["enabled"].boolValue {
+          chart.marker = nil
+          return
+      }
+      
+      let type: BridgeUtils.MarkerType;
+      
+      if json["type"].string != nil {
+        type = BridgeUtils.parceMarkerType(json["type"].string!)
+      } else {
+        type = .balloon
+      }
+      
+      if (type == .balloon) {
         var markerFont = UIFont.systemFont(ofSize: 12.0)
         
         if json["textSize"].float != nil {
             markerFont = markerFont.withSize(CGFloat(json["textSize"].floatValue))
         }
-        
         
         // TODO fontFamily, fontStyle
         
@@ -452,7 +475,15 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         chart.marker = balloonMarker
         
         balloonMarker.chartView = chart
-        
+      } else if (type == .point) {
+        let marker = PointMarker(
+          borderHeight: CGFloat(json["borderHeight"].float!),
+          shadowBlur: CGFloat(json["shadowBlur"].float!), shadowColor: RCTConvert.uiColor(json["shadowColor"].intValue).cgColor, backgroundColor: RCTConvert.uiColor(json["backgroundColor"].intValue).cgColor, borderColor:RCTConvert.uiColor(json["borderColor"].intValue).cgColor
+        );
+        marker.size = CGSize(width: CGFloat(json["width"].float!), height: CGFloat(json["height"].float!))
+        marker.chartView = chart
+        chart.marker = marker
+      }
     }
     
     func setHighlights(_ config: NSArray) {
@@ -465,7 +496,6 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             return
         } else {
             self.onSelect!(EntryToDictionaryUtils.entryToDictionary(entry))
-            
         }
     }
     
@@ -474,7 +504,6 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             return
         } else {
             self.onSelect!(nil)
-            
         }
     }
     

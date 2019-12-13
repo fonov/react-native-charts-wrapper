@@ -237,4 +237,3 @@ open class BalloonMarker: MarkerView {
 
     }
 }
-
